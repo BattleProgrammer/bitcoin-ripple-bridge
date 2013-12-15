@@ -8,7 +8,7 @@ console.log('process.env.SQS_BITCOIN_TRANSACTION_QUEUE_NAME: ', process.env.SQS_
 AWS.config.update({region: 'us-east-1'});
 var transactionQueue = new AWS.SQS();
 
-function enqueueTransaction (jsonString) {
+function enqueueTransaction (jsonString, callback) {
   transactionQueue.getQueueUrl({ QueueName: process.env.SQS_BITCOIN_TRANSACTION_QUEUE_NAME }, function (err, data) {
     if (err) {
       console.log(err);
@@ -19,8 +19,10 @@ function enqueueTransaction (jsonString) {
       }, function (err, data) {
         if (err) {
           console.log(err);
+          callback();
         } else {
           console.log('success!');
+          callback();
         }
       });
     }
@@ -29,7 +31,9 @@ function enqueueTransaction (jsonString) {
 
 app.post('/coinbase/transactions/callback', function (req, res) {
   var callbackJson = JSON.stringify(req.body);
-  enqueueTransaction(callbackJson);
+  enqueueTransaction(callbackJson, function () {
+    res.end();
+  });
 });
 
 var port = process.env.PORT || 5000;
