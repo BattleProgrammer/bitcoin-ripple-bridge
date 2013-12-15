@@ -1,0 +1,7 @@
+{
+  "name": "ripple-listener",
+  "version": "0.0.0",
+  "dependencies": {
+    "aws-sdk": ""
+  }
+}
