@@ -33,7 +33,6 @@ function onMessage(data, flags) {
           if (err) {
             console.log('error!');
             console.log(err);
-            console.log(data);
           } else {
             console.log('success!');
             console.log(data);
