@@ -1,7 +1,13 @@
-var AWS = require('aws-sdk');
-var WebSocket = require('ws');
-var Ripple = {};
+var AWS = require('aws-sdk'),
+    WebSocket = require('ws'),
+		Coinbase = require('coinbase-node'),
+		Ripple = {};
+
 Ripple.Transaction = require('./ripple/transaction.js');
+
+var coinbaseClient = new Coinbase.Client({
+  api_key: process.env.COINBASE_API_KEY
+});
 
 console.log('process.env.SQS_TRANSACTION_QUEUE_NAME: ', process.env.SQS_TRANSACTION_QUEUE_NAME);
 
@@ -15,36 +21,38 @@ function onOpen() {
   console.log('listening for activity for account: '+ accountId);
 }
 
+function withdrawBitcoins(transaction, bitcoinAddress){
+  var data = transaction.getData();	
+  if (data.currency == 'BTC') {
+    coinbaseClient.send_money(bitcoinAddress, data.amount, function(err, resp){
+			console.log(resp);
+		});	
+	}	
+}
+
+function enqueueTransaction(transaction) {
+	transactionQueue.getQueueUrl({ QueueName: process.env.SQS_TRANSACTION_QUEUE_NAME }, function (err, queue) {
+		if (err) {
+			console.log(err);
+		} else {
+			transactionQueue.sendMessage({
+				QueueUrl: queue.QueueUrl,
+				MessageBody: transaction.to_json()
+			}, function (err, data) {
+				if (err) { console.log(err);
+				} else { console.log(data);	}
+			});
+		}
+	});
+}
+
 function onMessage(data, flags) {
   var response = JSON.parse(data);
+	console.log(response);
   if (response.type == 'transaction') {
     var transaction = new Ripple.Transaction(response);
-
-    console.log('enqueuing transaction: ');
-    console.log(transaction.to_json());
-    transactionQueue.getQueueUrl({ QueueName: process.env.SQS_TRANSACTION_QUEUE_NAME }, function (err, data) {
-      if (err) {
-        console.log(err);
-      } else {
-        transactionQueue.sendMessage({
-          QueueUrl: data.QueueUrl,
-          MessageBody: transaction.to_json()
-        }, function (err, data) {
-          if (err) {
-            console.log('error!');
-            console.log(err);
-          } else {
-            console.log('success!');
-            console.log(data);
-          }
-        });
-      }
-
-    })
-
-
-  } else {
-    console.log(response);
+		console.log(transaction.getData());
+    withdrawBitcoins(transaction, '1sGtXBNWW4gjv4aToXA4hqLJqPrjscKok');
   }
 }
 

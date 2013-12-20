@@ -4,6 +4,7 @@
   "dependencies": {
     "aws-sdk": "",
     "ws":"",
-    "express":""
+    "express":"",
+		"coinbase-node": "git://github.com/stevenzeiler/coinbase-node#master"
   }
 }
